@@ -1,0 +1,28 @@
+extends layouts/layout
+
+block content
+  if user 
+    table
+      thead
+        tr
+          th Task Name
+          th Priority
+          th Actions
+      tbody
+        each task, index in tasks
+          tr
+            td= task.taskname
+            td(class=task.priority)= task.priority
+            td
+              form(action=`/delete-task/${task._id}`, method="post", class="delete-form")
+                button(type="submit") Delete
+    form(action="/add-task", method="post")
+      input(type="text", name="newTask", placeholder="Add a new task...")
+      select(name="priority")
+        option(value="low") Low
+        option(value="medium") Medium
+        option(value="high") High
+      button(type="submit") Add Task
+  else
+    p You must log in to view the task list. 
+    a(href="/login") Log In
