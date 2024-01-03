@@ -91,7 +91,7 @@ form select {
 
 form input[type="text"],
 form input[type="password"] {
-    width: 50%; /* Adjust to desired width or keep it 100% to fill the container */
+    width: 33%; /* Adjust to desired width or keep it 100% to fill the container */
     padding: 10px;
     margin-bottom: 15px;
     border: 1px solid #ddd;

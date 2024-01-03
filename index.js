@@ -1,8 +1,20 @@
+/**
+ * @file index.js is the main file for an Express application that manages a to-do list. 
+ * It handles user authentication, session management, and CRUD operations on todo items.
+ */
+
+/**
+ * Starts the Express application on the specified port and connects to a MongoDB instance
+ * to manage session data and to-do items. Sets up middleware for authentication, input
+ * validation, serving static files, and managing sessions. Defines route handlers for user
+ * authentication, to-do item manipulation, and session cleanup.
+ */
+
 import express from 'express';
 import session from 'express-session';
-import { randomBytes } from 'crypto';
-
 import { MongoClient, ServerApiVersion, ObjectId } from 'mongodb';
+import MongoStore from 'connect-mongo';
+
 import { checkUserPassword } from './taskOperations/checkUserPass.js';
 import { getTasks } from './taskOperations/getTasks.js';
 import { addTask } from './taskOperations/addTask.js';
@@ -12,7 +24,7 @@ import { registerUser } from './taskOperations/registerUser.js';
 const app = express();
 const port = process.env.PORT || 3000;
 
-const uri = `mongodb+srv://user:${process.env['mongoPW']}@cluster0.gvzuivz.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://user:${process.env['mongoPW']}@${process.env['mongoURI']}/?retryWrites=true&w=majority`;
 
 
 app.set('view engine', 'pug'); // Set the view engine to Pug
@@ -21,13 +33,27 @@ app.use(express.static('public')); // Serve static files from the 'public' direc
 
 // Generate a random secret for the session for the lifespan of the server lifetime
 // Each user has a unique session ID
-const sessionSecret = randomBytes(16).toString('hex'); 
+const sessionSecret = process.env['SESSION_SECRET'] 
+
+// Use connect-mongo for the session store
+const mongoStore = MongoStore.create({
+  mongoUrl: uri,
+  collectionName: 'sessions',
+  autoRemove: 'interval',
+  autoRemoveInterval: 10 // Interval in minutes to check for expired sessions
+});
 
 // Set up session middleware
 app.use(session({
   secret: sessionSecret,    
   resave: false,
+  store: mongoStore,
   saveUninitialized: true,
+  cookie: {
+    maxAge: 3600000, // Expires after 1 hour (3600000 ms)
+    secure: process.env.NODE_ENV === 'production', // Set secure to true if in production
+    httpOnly: true, // Set HttpOnly to prevent access from client-side scripts
+  },
 }));
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -41,7 +67,17 @@ const client = new MongoClient(uri, {
 
 await client.connect();
 
-// Helper function to only only access to certain pages if they are authenticated.
+/**
+ * Middleware to ensure a user is authenticated before allowing access to certain routes.
+ * If a user is authenticated, the next middleware is called; otherwise, the user is
+ * redirected to the login page.
+ *
+ * @function ensureAuthenticated
+ * @param {object} req - The request object from the Express.js route.
+ * @param {object} res - The response object from the Express.js route.
+ * @param {function} next - The callback function to continue to the next middleware.
+ */
+
 function ensureAuthenticated(req, res, next) {
   if (req.session && req.session.user) {
     return next();
@@ -49,6 +85,46 @@ function ensureAuthenticated(req, res, next) {
   res.redirect('/login');
 }
 
+/**
+ * Middleware to perform server-side validation for login input. It checks that both
+ * username and password are strings and are not empty. If validation fails, it renders
+ * the login page with an error, otherwise, it calls the next middleware.
+ *
+ * @function validateLoginInput
+ * @param {object} req - The request object from the Express.js route.
+ * @param {object} res - The response object from the Express.js route.
+ * @param {function} next - The callback to continue processing the request.
+ */
+
+function validateLoginInput(req, res, next) {
+  const { username, password } = req.body;
+  if (!username || typeof username !== 'string' || !password || typeof password !== 'string') {
+    return res.render('login', { error: 'Invalid input' });
+  }
+  next();
+}
+
+/**
+ * Middleware to perform server-side validation for task input. It checks that the task name
+ * is a string and not empty. If priority is provided, it also checks that it's a string. If
+ * validation fails, it redirects to the home page, otherwise, it calls the next middleware.
+ *
+ * @function validateTaskInput
+ * @param {object} req - The request object from the Express.js route.
+ * @param {object} res - The response object from the Express.js route.
+ * @param {function} next - The callback to continue processing the request.
+ */
+
+function validateTaskInput(req, res, next) {
+  const { newTask, priority } = req.body;
+  if (!newTask || typeof newTask !== 'string') {
+    return res.redirect('/');
+  }
+  if (priority !== undefined && typeof newTask !== 'string') {
+    return res.redirect('/');
+  }
+  next();
+}
 
 // Define routes
 app.get('/login', (req, res) => {
@@ -88,7 +164,7 @@ app.get('/register', (req, res) => {
 // });
 
 
-app.post('/login', (req, res) => {
+app.post('/login', validateLoginInput, (req, res) => {
   const userName = req.body.username;
   const inputPassword = req.body.password;
 
@@ -130,7 +206,7 @@ app.get('/', ensureAuthenticated, async (req, res) => {
 });
 
 
-app.post('/add-task', ensureAuthenticated, async (req, res) => {
+app.post('/add-task', ensureAuthenticated, validateTaskInput, async (req, res) => {
 
   // Create a new task object
   const newTask = {
