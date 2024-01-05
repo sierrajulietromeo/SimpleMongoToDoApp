@@ -37,6 +37,22 @@ Use of Declarative Routers: To declutter the main application file, consider usi
 HTTP Status Codes: Make more use of appropriate HTTP status codes for responses, especially for error cases.
 Log Consistency: Improve logging for consistency and clarity, use a proper logging library that can be configured for different environments (development, production).
 
+## Adherence to MVC pattern
+
+- Model: The application interacts with the model through MongoDB collections. While the model logic isn't encapsulated into classes or functions specifically named as models, the code that interacts with the MongoDB database (`getTasks`, `addTask`, `deleteTask`, `checkUserPassword`, `registerUser`) effectively serves as the model layer. It handles data manipulation and business logic.
+
+- View: The views are rendered using Pug templates. For instance, the *index* and *login* routes render views using the `res.render()` function, providing data that gets embedded into these templates.
+
+- Controller: The router and middleware functions in `index.js`, such as `app.get`, `app.post`, and middleware like `ensureAuthenticated` and `validateLoginInput`, serve as controllers. They take user input from the request, process it (possibly updating or querying the model), and return the appropriate view response.
+
+The application largely conforms to the MVC pattern with some slight deviations, which are common in real-world Express.js applications due to their flexibility and middleware-centric nature:
+
+- Models are not structured into formal classes or separate files specifically marked as models but instead are handled through database operation functions.
+- Controllers and routes are combined in Express.js. The logic for handling requests, processing data, and returning responses are written in the same functions or middleware.
+- Views are managed through Pug templates.
+
+Overall, the application's code organisation loosely follows the MVC pattern, which aims to separate concerns but adapts it to fit the typical structure of an Express.js application.
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.md file for details.
