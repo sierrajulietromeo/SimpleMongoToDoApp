@@ -1,3 +1,6 @@
+*** NB: See the MVC branch for a version of the application that follows the MVC pattern more rigidly. Not to say that this one doesn't (see the section below), but the branch separates out the routes and middleware from `index.js`.
+
+
 # To-Do List Application
 
 This project is a web-based to-do list application that allows users to manage their tasks efficiently. It features user authentication, session management, and uses MongoDB for data storage. Users can create, view, and delete tasks, as well as categorise them by priority levels (high, medium, low).
