@@ -9,7 +9,7 @@ import routes from './routes.js'; // Import routes
 const app = express();
 const port = process.env.PORT || 3000;
 
-const uri = `mongodb+srv://user:${process.env['mongoPW']}@$cluster0.gvzuivz.mongodb.net/?retryWrites=true&w=majority`;
+const uri = process.env['mongoURI'];
 
 app.set('view engine', 'pug'); // Set the view engine to Pug
 app.use(express.urlencoded({ extended: true })); // Set up middleware for parsing POST requests
