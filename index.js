@@ -24,7 +24,7 @@ import { registerUser } from './taskOperations/registerUser.js';
 const app = express();
 const port = process.env.PORT || 3000;
 
-const uri = `mongodb+srv://user:${process.env['mongoPW']}@${process.env['mongoURI']}/?retryWrites=true&w=majority`;
+const uri = process.env['mongoURI'];
 
 
 app.set('view engine', 'pug'); // Set the view engine to Pug
